@@ -25,9 +25,42 @@ SOFTWARE.
 
 package posting
 
+import "time"
 
 type Stamper interface{
 	GetId(id_buf []byte) []byte
 	PathSeg(buf []byte) []byte
+}
+
+const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-"
+
+func versionate(id []byte, ri int) []byte{
+	var stor [5]byte
+	//if ri<0 { ri = -ri }
+	for i := range stor {
+		stor[i] = alphabet[ri&63]
+		ri >>= 6
+	}
+	return append(id,stor[:]...)
+}
+
+const msgIdDate = ".20060102.150405.999@"
+
+/*
+The Hostname implements a Stamper, based on the server's host name.
+The Message-IDs it generates are purely based on a timestamp.
+*/
+type HostName string
+func (h HostName) PathSeg(buf []byte) []byte {
+	return append(append(buf,h...),'!')
+}
+func (h HostName) GetId(id_buf []byte) []byte {
+	t := time.Now()
+	id := append(id_buf,'<')
+	id = versionate(id,t.Nanosecond())
+	id = t.AppendFormat(id,msgIdDate)
+	id = append(id,h...)
+	id = append(id,'>')
+	return id
 }
 

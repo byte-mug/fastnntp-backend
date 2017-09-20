@@ -66,12 +66,21 @@ func trimDOT(b []byte) []byte {
 	if b[i]=='.' { return b[:i] }
 	return b
 }
-func singleLineB(buf []byte) []byte {
-	n := make([]byte,0,len(buf))
-	for _,seg := range bytes.SplitAfter(buf,lineFeed) {
-		n = append(n,trimCRLF(seg)...)
+func trimWS(buf []byte) []byte {
+	for i,b := range buf {
+		switch b {
+		case '\r','\n','\t',' ': continue
+		default: return buf[i:]
+		}
 	}
-	return n
+	return buf[:0]
+}
+func singleLineB(buf []byte) []byte {
+	n := make([]byte,0,len(buf)+1)
+	for _,seg := range bytes.SplitAfter(buf,lineFeed) {
+		n = append(append(n,' '),trimWS(trimCRLF(seg))...)
+	}
+	return n[1:]
 }
 
 func ConsumePostedArticle(r *fastnntp.DotReader) (head []byte, body []byte) {
@@ -110,6 +119,7 @@ var standardHeaders = map[string]int {
 	"from"      : 4,
 	"date"      : 5,
 	"references": 6,
+	"path"      : 7,
 }
 var headerCase = map[string][]byte {
 	"message-id": []byte("Message-ID"),
@@ -120,26 +130,6 @@ var headerCase = map[string][]byte {
 	"references": []byte("References"),
 }
 
-/*
-func writeHeader(b *bytes.Buffer, cut int, line []byte ) {
-	if cut>=76 { goto done }
-	for len(line)>78 {
-		i := bytes.LastIndexAny(line[:78]," \t")
-		if i<cut { i=-1 }
-		if i<0 {
-			i := bytes.LastIndexAny(line[cut:78]," \t")
-			if i>=0 { i+=cut }
-		}
-		if i<0 { i = 78 }
-		b.Write(line[:i])
-		b.WriteString("\r\n")
-		line = line[i:]
-	}
-done:
-	b.Write(line)
-	b.WriteString("\r\n")
-}
-*/
 
 func ParseAndProcessHeader(id []byte, s Stamper, head []byte) (hi *HeadInfo) {
 	hi = new(HeadInfo)
@@ -149,14 +139,24 @@ func ParseAndProcessHeader(id []byte, s Stamper, head []byte) (hi *HeadInfo) {
 	buffer := make([]byte,0,100)
 	has_path := false
 	has_id := false
-	for _,el := range bytes.SplitAfter(head,lineFeed) {
-		el = trimCRLF(el)
-		if len(el)==0 { continue }
-		switch el[0] {
-		case ' ','\t':
-			// For now, we preserve the Conatined Newline.
-			last = append(last,"\r\n"...)
-			last = append(last,el...); continue
+	spla := bytes.SplitAfter(head,lineFeed)
+	{
+		i := 0
+		for _,el := range spla {
+			el = trimCRLF(el)
+			if len(el)==0 { continue }
+			spla[i] = el
+			i++
+		}
+		spla = append(spla[:i],nil)
+	}
+	for _,el := range spla {
+		if len(el)>0 {
+			switch el[0] {
+			case ' ','\t':
+				last = append(last,"\r\n"...)
+				last = append(last,el...); continue
+			}
 		}
 		if len(last)>0 {
 			i := bytes.IndexByte(last,':')
@@ -183,14 +183,13 @@ func ParseAndProcessHeader(id []byte, s Stamper, head []byte) (hi *HeadInfo) {
 						unwrit = false
 						headw.Write(last[:j])
 						headw.Write(pb)
-						headw.Write(last[:j])
+						headw.Write(last[j:])
 						headw.WriteString("\r\n")
 					}
 				  }
 				}
 			}
 			if unwrit {
-				//writeHeader(headw,j,last)
 				headw.Write(last)
 				headw.WriteString("\r\n")
 			}
@@ -206,7 +205,10 @@ func ParseAndProcessHeader(id []byte, s Stamper, head []byte) (hi *HeadInfo) {
 		}
 	}
 	if !has_id {
-		idm := s.GetId(buffer)
+		idm := id
+		if len(idm)==0 {
+			idm = s.GetId(buffer)
+		}
 		if len(idm)>0 {
 			hi.MessageId  = cloneB(idm)
 			headw.WriteString("Message-ID: ")
