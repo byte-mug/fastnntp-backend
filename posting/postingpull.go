@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-
+// DEPRECATED, use "github.com/maxymania/fastnntp/posting" instead.
 package posting
 
 import "github.com/maxymania/fastnntp"
@@ -95,16 +95,20 @@ func singleLineB(buf []byte) []byte {
 	return n[1:]
 }
 
+func pumpHBW(r *fastnntp.DotReader,hbw *fastnntp.HeadBodyWriter){
+	dw := fastnntp.AcquireDotWriter()
+	dw.Reset(hbw)
+	defer func(){ dw.Close(); dw.Release() }()
+	io.Copy(dw,r)
+}
 func ConsumePostedArticle(r *fastnntp.DotReader) (head []byte, body []byte) {
 	headw := new(bytes.Buffer)
 	bodyw := new(bytes.Buffer)
 	hbw := fastnntp.AcquireHeadBodyWriter()
 	hbw.Reset(headw,bodyw)
 	defer hbw.Release()
-	dw := fastnntp.AcquireDotWriter()
-	dw.Reset(hbw)
-	defer func(){ dw.Close(); dw.Release() }()
-	io.Copy(dw,r)
+	
+	pumpHBW(r,hbw)
 	
 	head = trimCRLF(headw.Bytes())
 	body = trimDOT(trimCRLF(bodyw.Bytes()))

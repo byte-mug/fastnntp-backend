@@ -26,7 +26,7 @@ SOFTWARE.
 package fnntpbackend
 
 import "github.com/maxymania/fastnntp"
-import "github.com/maxymania/fastnntp-backend/posting"
+import "github.com/maxymania/fastnntp/posting"
 import "github.com/vmihailenco/msgpack"
 
 //func (a *Articledb) 
