@@ -25,7 +25,6 @@ SOFTWARE.
 
 package fnntpbackend
 
-//import "fmt"
 import "github.com/maxymania/fastnntp"
 import "github.com/vmihailenco/msgpack"
 
@@ -113,7 +112,7 @@ func (a *Articledb) writeOverviewRange(ar *fastnntp.ArticleRange, w fastnntp.IOv
 	t,e := a.begin(false)
 	if e!=nil { return }
 	defer t.commit()
-	t.writeOverviewId(ar, w)
+	t.writeOverviewRange(ar, w)
 }
 func (a *articleTransaction) writeOverviewRange(ar *fastnntp.ArticleRange, w fastnntp.IOverview) {
 	var ao articleOver
@@ -121,12 +120,12 @@ func (a *articleTransaction) writeOverviewRange(ar *fastnntp.ArticleRange, w fas
 	if bkt==nil { return }
 	c := bkt.Cursor()
 	k,m := c.Seek(encode64(ar.Number))
-	for len(k)!=0 {
+	for ; len(k)!=0 ; k,m = c.Next() {
 		num := decode64(k)
 		if num>ar.LastNumber { break }
 		v := a.tx.Bucket(tARTOVER).Get(m)
 		if msgpack.Unmarshal(v,&ao)!=nil { continue }
-		w.WriteEntry(0, ao.SF[0], ao.SF[1], ao.SF[2], ao.SF[3], ao.SF[4], ao.LN[0], ao.LN[1])
+		w.WriteEntry(num, ao.SF[0], ao.SF[1], ao.SF[2], ao.SF[3], ao.SF[4], ao.LN[0], ao.LN[1])
 	}
 }
 

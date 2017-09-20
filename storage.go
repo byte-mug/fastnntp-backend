@@ -34,17 +34,24 @@ type articleTransaction struct{
 	db *Articledb
 	tx *bolt.Tx
 	writable bool
+	done bool
 }
 func (a *Articledb) begin(writable bool) (*articleTransaction,error) {
 	tx,e := a.DB.Begin(writable)
 	if e!=nil { return nil,e }
-	return &articleTransaction{a,tx,writable},nil
+	return &articleTransaction{a,tx,writable,false},nil
 }
 func (a *articleTransaction) commit() error {
-	if a.writable { return a.tx.Rollback() }
+	if a.done { return nil }
+	a.done = true
+	if !a.writable { return a.tx.Rollback() }
 	return a.tx.Commit()
 }
-func (a *articleTransaction) rollback() error { return a.tx.Rollback() }
+func (a *articleTransaction) rollback() error {
+	if a.done { return nil }
+	a.done = true
+	return a.tx.Rollback()
+}
 
 func (a *Articledb) Initialize() {
 	a.DB.Update(initializeDB)

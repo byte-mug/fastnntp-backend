@@ -44,9 +44,32 @@ func (a *articleTransaction) AdmAddGroup(group, descr []byte) error {
 	if len(v)!=0 { return fmt.Errorf("Group exists %v",string(group)) }
 	v = a.tx.Bucket(tGRPNUMS).Get(group)
 	if len(v)!=0 { return fmt.Errorf("Group exists %v",string(group)) }
+	
 	a.tx.Bucket(tGRPINFO).Put(group,descr)
 	a.tx.Bucket(tGRPNUMS).Put(group,gnums)
 	a.tx.Bucket(tGRPARTS).CreateBucketIfNotExists(group)
+	return nil
+}
+
+func (a *Articledb) AdmGroupChangeState(group []byte, state byte) error {
+	t,e := a.begin(true)
+	if e!=nil { return e }
+	defer t.commit()
+	return t.AdmGroupChangeState(group,state)
+}
+func (a *articleTransaction) AdmGroupChangeState(group []byte, state byte) error {
+	u := new(groupInfo)
+	v := a.tx.Bucket(tGRPNUMS).Get(group)
+	if len(v)==0 { return fmt.Errorf("No such group %v",string(group)) }
+	e := msgpack.Unmarshal(v,u)
+	if e!=nil { return e }
+	
+	u[3] = int64(state)
+	
+	gnums,e := msgpack.Marshal(u)
+	if e!=nil { return e }
+	
+	a.tx.Bucket(tGRPNUMS).Put(group,gnums)
 	return nil
 }
 

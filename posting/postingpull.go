@@ -30,6 +30,7 @@ import "bytes"
 import "io"
 
 var lineFeed = []byte("\n")
+var comma = []byte(",")
 
 func cloneB(buf []byte) []byte {
 	n := make([]byte,len(buf))
@@ -74,6 +75,17 @@ func trimWS(buf []byte) []byte {
 		}
 	}
 	return buf[:0]
+}
+func trimWSBack(b []byte) []byte {
+	i := len(b)
+	for i>0 {
+		i--
+		switch b[i] {
+		case '\r','\n','\t',' ': continue
+		default: return b[:i+1]
+		}
+	}
+	return b[:0]
 }
 func singleLineB(buf []byte) []byte {
 	n := make([]byte,0,len(buf)+1)
@@ -218,5 +230,26 @@ func ParseAndProcessHeader(id []byte, s Stamper, head []byte) (hi *HeadInfo) {
 	}
 	hi.RAW = headw.Bytes()
 	return
+}
+
+func CountLines(body []byte) (c int64) {
+	c = 0
+	for _,n := range body {
+		if n=='\n' { c++ }
+	}
+	return
+}
+
+func SplitNewsgroups(ng []byte) [][]byte {
+	r := bytes.Split(ng,comma)
+	i := 0
+	for _,v := range r {
+		v = trimWSBack(v)
+		v = trimWS(v)
+		if len(v)==0 { continue }
+		r[i] = v
+		i++
+	}
+	return r[:i]
 }
 

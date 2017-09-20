@@ -51,9 +51,10 @@ func (a *articleTransaction) ListGroups(wm *fastnntp.WildMat, ila fastnntp.IList
 	c1 := a.tx.Bucket(tGRPNUMS).Cursor()
 	gdescr := a.tx.Bucket(tGRPINFO)
 	k,v := c1.First()
-	for len(k)>0 {
+	for ; len(k)>0 ; k,v = c1.Next() {
 		if msgpack.Unmarshal(v,&gi)!=nil { continue }
 		ila.WriteFullInfo(k, gi[2], gi[1], byte(gi[3]), gdescr.Get(k))
+		
 	}
 	return true
 }
