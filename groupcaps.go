@@ -26,7 +26,7 @@ SOFTWARE.
 package fnntpbackend
 
 import "fmt"
-import "github.com/maxymania/fastnntp"
+import "github.com/byte-mug/fastnntp"
 import "github.com/vmihailenco/msgpack"
 
 type groupInfo [4]int64 /* [ Count, Low, High, Status ]*/

@@ -22,10 +22,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-// DEPRECATED, use "github.com/maxymania/fastnntp/posting" instead.
+// DEPRECATED, use "github.com/byte-mug/fastnntp/posting" instead.
 package posting
 
-import "github.com/maxymania/fastnntp"
+import "github.com/byte-mug/fastnntp"
 import "bytes"
 import "io"
 

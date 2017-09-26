@@ -25,7 +25,7 @@ SOFTWARE.
 
 package fnntpbackend
 
-import "github.com/maxymania/fastnntp"
+import "github.com/byte-mug/fastnntp"
 import "github.com/vmihailenco/msgpack"
 
 type articleMetadata struct{
